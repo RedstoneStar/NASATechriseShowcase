@@ -1,0 +1,10 @@
+# Raw source archives & SD card dump (already compiled into assets/ and data/world24_data.js)
+GeneralData/
+FlightData/
+
+# Python / OS artifacts
+__pycache__/
+*.pyc
+*.zip
+.DS_Store
+Thumbs.db

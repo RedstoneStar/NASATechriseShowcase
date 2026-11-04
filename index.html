@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>What's Up There? | NASA TechRise Flight World 24 (N141WV)</title>
+  <meta name="description" content="Interactive 3D stratospheric flight viewer and research showcase for Oconomowoc High School's NASA TechRise Student Challenge experiment aboard World View high-altitude balloon N141WV." />
+
+  <!-- Open Graph for sharing with friends -->
+  <meta property="og:title" content="What's Up There? — NASA TechRise Flight World 24" />
+  <meta property="og:description" content="Explore the real 84,185 ft stratospheric balloon trajectory over Lake Powell &amp; Northern Arizona, onboard camera footage, crash forensics, and UW–Madison SEM discovery of a 3.3 µm Zirconium particle." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="assets/images/hardware/final_payload_front.jpg" />
+
+  <!-- Fonts: Space Grotesk (Display), Inter (Body), JetBrains Mono (Telemetry) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- CesiumJS 1.122 CSS & JS (Keyless Esri World Imagery + 3D Terrain + Cross-Origin Worker Shim) -->
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+  <script>
+    window.CESIUM_BASE_URL = 'https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/';
+    // Universal Cross-Origin Web Worker Shim — must run BEFORE Cesium.js so 3D Terrain & Polyline ES-Module Workers run cleanly on any static host or localhost
+    (function () {
+      if (!window.Worker) return;
+      const NativeWorker = window.Worker;
+      window.Worker = function (scriptURL, options) {
+        try {
+          const urlStr = String(scriptURL);
+          if (/^https?:\/\//i.test(urlStr) && !urlStr.startsWith(window.location.origin)) {
+            const isModule = options && options.type === 'module';
+            const code = isModule
+              ? `import ${JSON.stringify(urlStr)};`
+              : `importScripts(${JSON.stringify(urlStr)});`;
+            const blob = new Blob([code], { type: 'application/javascript' });
+            return new NativeWorker(URL.createObjectURL(blob), options);
+          }
+        } catch (_) {}
+        return new NativeWorker(scriptURL, options);
+      };
+    })();
+  </script>
+  <script defer src="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Cesium.js"></script>
+
+  <!-- Chart.js 4.4 -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- Subtle Ambient Aerospace Grid Background -->
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <!-- Sticky Mission Control Navigation -->
+  <header class="site-header" id="top">
+    <div class="nav-container">
+      <a href="#top" class="brand-mark">
+        <span class="brand-dot"></span>
+        <div class="brand-text">
+          <span class="brand-callsign">TR5 // WORLD 24 · N141WV</span>
+          <span class="brand-title">What’s Up There?</span>
+        </div>
+      </a>
+
+      <nav class="main-nav" aria-label="Primary Navigation">
+        <a href="#flight-viewer" class="nav-link active-cta">3D Flight Viewer</a>
+        <a href="#mission" class="nav-link">Mission</a>
+        <a href="#engineering" class="nav-link">Engineering</a>
+        <a href="#telemetry" class="nav-link">Telemetry</a>
+        <a href="#recovery" class="nav-link">Crash &amp; Recovery</a>
+        <a href="#discovery" class="nav-link">SEM Discovery</a>
+        <a href="#team" class="nav-link">Team</a>
+      </nav>
+
+      <div class="header-actions">
+        <button id="globalUnitToggle" class="unit-pill" type="button" title="Toggle Imperial (ft, mph, °F) and Metric (m, m/s, °C) units">
+          <span class="unit-opt active" data-u="imperial">FT · °F</span>
+          <span class="unit-sep">/</span>
+          <span class="unit-opt" data-u="metric">M · °C</span>
+        </button>
+        <button id="mobileMenuBtn" class="mobile-menu-btn" type="button" aria-label="Toggle Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- =====================================================================
+         HERO SECTION
+    ====================================================================== -->
+    <section class="hero-section">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <div class="mission-badges">
+            <span class="badge badge-cyan">NASA TechRise Student Challenge</span>
+            <span class="badge badge-outline">World View Stratollite · N141WV</span>
+            <span class="badge badge-outline">July 1, 2026 · Page, AZ</span>
+          </div>
+
+          <h1 class="hero-headline">
+            What’s Up There?
+            <span class="hero-subheadline">Stratospheric Particulate Sampling &amp; Atmospheric Profiling to <span class="u-alt-peak">84,185 ft</span></span>
+          </h1>
+
+          <p class="hero-lead">
+            Designed and built by six student engineers at <strong>Oconomowoc High School</strong> in association with <strong>NASA</strong> and <strong>Future Engineers</strong>, <em>World 24</em> ascended 16 miles above Northern Arizona to capture air particulates across five atmospheric layers using a custom servo-driven rotary filter array.
+          </p>
+          <p class="hero-lead hero-lead-secondary">
+            Though a violent, high-speed impact at the end of the flight crushed the payload enclosure and destroyed the five active sample chambers, the onboard flight logs, 6+ hours of HD camera video, and a single shielded <strong>control filter</strong> survived—leading to an unexpected nanoscale discovery under Scanning Electron Microscopy at <strong>UW–Madison</strong>.
+          </p>
+
+          <div class="hero-cta-group">
+            <a href="#flight-viewer" class="btn btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              Launch 3D Flight Replay
+            </a>
+            <a href="#discovery" class="btn btn-secondary">
+              Inspect Zirconium SEM Data
+            </a>
+            <a href="#recovery" class="btn btn-ghost">
+              See Crash Forensics
+            </a>
+          </div>
+        </div>
+
+        <div class="hero-showcase-card">
+          <div class="showcase-img-wrap" data-lightbox="assets/images/hardware/final_payload_front.jpg" data-caption="Completed TR5 World 24 flight payload before shipping to World View: 5-port 3D-printed rotary filter shutter (top), cyan 1080p flight camera mount (middle), and 4-sensor atmospheric array (bottom).">
+            <img src="assets/images/hardware/final_payload_front.jpg" alt="Completed NASA TechRise World 24 Payload built by Oconomowoc High School" />
+            <div class="showcase-overlay-tag">
+              <span class="status-dot"></span> PAYLOAD CALLSIGN: TR5_WORLD_24
+            </div>
+          </div>
+
+          <div class="hero-stats-strip">
+            <div class="stat-cell">
+              <span class="stat-label">PEAK ALTITUDE</span>
+              <span class="stat-val" data-metric="25,660 m" data-imperial="84,185 ft">84,185 ft</span>
+              <span class="stat-sub" data-metric="84,185 ft MSL" data-imperial="25,659.7 m MSL">25,659.7 m MSL</span>
+            </div>
+            <div class="stat-cell">
+              <span class="stat-label">MIN AMBIENT TEMP</span>
+              <span class="stat-val" data-metric="-63.2 °C" data-imperial="-81.8 °F">-81.8 °F</span>
+              <span class="stat-sub">Tropopause Cold Trap</span>
+            </div>
+            <div class="stat-cell">
+              <span class="stat-label">ACTIVE AIR DRAW</span>
+              <span class="stat-val">5 Stages</span>
+              <span class="stat-sub">3h 58m Total Pump Time</span>
+            </div>
+            <div class="stat-cell">
+              <span class="stat-label">SURVIVING SAMPLE</span>
+              <span class="stat-val accent-emerald">1 Control</span>
+              <span class="stat-sub">3.3 µm Zr Particle Found</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         IMMERSIVE 3D FLIGHT VIEWER (WORLD_24 REAL TELEMETRY)
+    ====================================================================== -->
+    <section id="flight-viewer" class="viewer-section">
+      <div class="container section-intro-compact">
+        <div>
+          <span class="eyebrow">INTERACTIVE 3D MISSION REPLAY · REAL WORLD_24 TELEMETRY</span>
+          <h2 class="section-title">Stratospheric Flight Viewer</h2>
+          <p class="section-desc">
+            Reconstructed from <strong>16,461 1-Hz flight records</strong> logged aboard World View balloon <code>N141WV</code> on July 1, 2026. Features real 3D canyon elevation across Page, Lake Powell, Vermilion Cliffs, and the Arizona Strip, true solar lighting from the <strong>6:49 AM MST</strong> liftoff through solar noon, synchronized rotary filter actuation, and the real onboard payload camera feed.
+          </p>
+        </div>
+      </div>
+
+      <div class="viewer-shell" id="viewerShell">
+        <!-- Top Overlay Bar inside 3D Viewer -->
+        <div class="viewer-topbar">
+          <div class="viewer-mission-clock">
+            <div class="clock-pill">
+              <span class="clock-tag" id="hudPhaseBadge">LAUNCHING</span>
+              <span class="clock-main" id="hudMissionClock">T+ 00:00:00</span>
+            </div>
+            <div class="clock-sub-group">
+              <span id="hudLocalTime">06:49:21 AM MST</span>
+              <span class="sep">·</span>
+              <span id="hudSunAngle" title="Calculated true solar elevation and azimuth at balloon coordinates">Sun: 14.2° ENE</span>
+              <span class="sep">·</span>
+              <span id="hudWeatherChip" class="weather-chip" title="Actual sky &amp; atmospheric conditions recorded on July 1, 2026">Clear Morning Sky · 12.5% RH</span>
+            </div>
+          </div>
+
+          <!-- Camera Mode Presets -->
+          <div class="viewer-cam-modes" role="group" aria-label="3D Camera Modes">
+            <button type="button" class="cam-btn active" data-cam="orbit" title="Oblique 3D overview framing Lake Powell, Vermilion Cliffs, Kaibab Plateau &amp; full trajectory">Orbit Overview</button>
+            <button type="button" class="cam-btn" data-cam="chase" title="Follow closely beside the expanding 3D stratospheric balloon">Chase Balloon</button>
+            <button type="button" class="cam-btn" data-cam="pov" title="Look out from the payload gondola across the curved horizon">Payload Horizon</button>
+            <button type="button" class="cam-btn" data-cam="pad" title="Track upward from the launch pad at Page Municipal Airport">Pad Ground View</button>
+          </div>
+
+          <!-- Live Experiment Video + Layer & Theater Controls -->
+          <div class="viewer-utility-btns">
+            <button type="button" id="toggleOnboardVideoBtn" class="utility-btn utility-btn-live" title="Open the real 1080p video recorded inside our payload during the flight!">
+              <span class="rec-dot"></span> Live Payload View
+            </button>
+            <div class="dropdown-wrap">
+              <button type="button" id="layerMenuBtn" class="utility-btn" title="Map Imagery, Labels &amp; Lighting Options">
+                Layers ▾
+              </button>
+              <div class="layer-dropdown" id="layerDropdown">
+                <div class="dropdown-heading">Basemap Imagery</div>
+                <label class="dropdown-radio"><input type="radio" name="basemap" value="esri_hybrid" checked /> Satellite + Place Labels</label>
+                <label class="dropdown-radio"><input type="radio" name="basemap" value="esri_sat" /> Pure Satellite Imagery</label>
+                <label class="dropdown-radio"><input type="radio" name="basemap" value="usgs_sat" /> USGS National Map Ortho</label>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-heading">3D Scene &amp; Weather</div>
+                <label class="dropdown-check"><input type="checkbox" id="chkCurtain" checked /> Altitude Curtain &amp; Ground Shadow</label>
+                <label class="dropdown-check"><input type="checkbox" id="chkMilestones" checked /> Flight Milestone Pins</label>
+                <label class="dropdown-check"><input type="checkbox" id="chkCapsuleZones" /> Capsule 1–5 Color Overlays</label>
+                <label class="dropdown-check"><input type="checkbox" id="chkClouds" checked /> Morning Fair-Weather Clouds</label>
+                <label class="dropdown-check"><input type="checkbox" id="chkRealSun" checked /> Real-Time Sun &amp; Canyon Shadows</label>
+                <label class="dropdown-check"><input type="checkbox" id="chkHUD" checked /> Telemetry Side Panel</label>
+              </div>
+            </div>
+            <button type="button" id="fullscreenViewerBtn" class="utility-btn" title="Toggle Fullscreen Mission Control (F)">
+              ⛶ Fullscreen
+            </button>
+          </div>
+        </div>
+
+        <!-- Cesium 3D Globe Container -->
+        <div id="cesiumContainer" class="cesium-stage">
+          <div id="viewerLoadingOverlay" class="viewer-loading">
+            <div class="spinner"></div>
+            <p class="loading-title">Streaming 3D Canyon Terrain &amp; WORLD_24 Telemetry…</p>
+            <p class="loading-sub">Page, AZ · Lake Powell · Vermilion Cliffs · Arizona Strip</p>
+          </div>
+
+          <!-- Shown ONLY if user opened index.html directly via file:// instead of localhost or web host -->
+          <div id="fileProtocolBanner" class="file-protocol-banner hidden">
+            <div class="fpb-card">
+              <span class="badge badge-amber">Local File Security Notice (file://)</span>
+              <h3>Open via Local Server for 3D Terrain Workers &amp; YouTube Sync</h3>
+              <p>
+                Modern browsers block 3D terrain Web Workers and YouTube video embeds (<code>Error 153</code>) when an HTML file is double-clicked directly from a <code>file://</code> folder path.
+              </p>
+              <p>
+                <strong>To run everything locally right now:</strong> double-click <code>launch_local_preview.bat</code> in this project folder (or click below if the server is already running). When hosted on any free static host (GitHub Pages, Cloudflare Pages, Netlify), it works automatically!
+              </p>
+              <div class="fpb-actions">
+                <a href="http://localhost:8080#flight-viewer" class="btn btn-primary">Open http://localhost:8080 ↗</a>
+                <button type="button" id="dismissFileBannerBtn" class="btn btn-ghost">Dismiss</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expandable & Resizable Picture-in-Picture Onboard Experiment Camera Feed -->
+        <div id="onboardVideoModal" class="pip-video-panel hidden" aria-label="Onboard Experiment Video Feed">
+          <div class="pip-header" id="pipDragHandle" title="Drag to reposition video window">
+            <div class="pip-title-wrap">
+              <span class="rec-dot"></span>
+              <span class="pip-title" id="pipFeedTitle">Payload Camera (1080p)</span>
+            </div>
+            <div class="pip-header-btns">
+              <button type="button" class="pip-tab active" data-feed="onboard">Payload Cam</button>
+              <button type="button" class="pip-tab" data-feed="livestream">Launch Stream</button>
+              <button type="button" id="minPipBtn" class="pip-win-btn" title="Minimize / Collapse Video">—</button>
+              <button type="button" id="expandPipBtn" class="pip-win-btn pip-expand-btn" title="Cycle Size: Compact → Large → Theater">⤢ Expand</button>
+              <button type="button" id="closePipBtn" class="pip-close" aria-label="Close Video">✕</button>
+            </div>
+          </div>
+
+          <div class="pip-body" id="pipBodyWrap">
+            <div class="pip-player-wrap" id="pipPlayerStage">
+              <div id="ytPlayerContainer"></div>
+              <div id="pipFileWarning" class="pip-file-warning hidden">
+                <strong>YouTube blocks embeds on <code>file://</code> paths (Error 153)</strong>
+                <p>Open <a href="http://localhost:8080#flight-viewer">http://localhost:8080</a> (via <code>launch_local_preview.bat</code>) or host online for live synced playback, or pop out at the current flight timestamp:</p>
+                <a id="pipExternalFallbackLink" href="https://www.youtube.com/watch?v=DjYmvwQkJjw&t=5920s" target="_blank" rel="noopener" class="btn btn-primary btn-sm">Watch at Synced Timestamp on YouTube ↗</a>
+              </div>
+            </div>
+
+            <div class="pip-controls-bar">
+              <div class="pip-sync-left">
+                <label class="sync-toggle" id="syncToggleWrap" title="Keep onboard video locked in sync with the 3D flight simulation">
+                  <input type="checkbox" id="chkSyncVideo" checked />
+                  <span>Sync with 3D Flight</span>
+                </label>
+                <span class="pip-sync-badge" id="pipSyncBadge">Vid 01:38:40</span>
+                <button type="button" id="btnRealTimeSync" class="pip-rt-btn" title="Play both the 3D balloon and onboard video together at real-time 1× speed">1× Live Sync</button>
+              </div>
+              <div class="pip-chapters" id="pipChaptersOnboard">
+                <button type="button" class="pip-jump" data-vsec="5920" data-el="1611">Liftoff (1:38:40)</button>
+                <button type="button" class="pip-jump" data-vsec="6500" data-el="2191">Lake Powell</button>
+                <button type="button" class="pip-jump" data-vsec="8337" data-el="4028">Tropopause</button>
+                <button type="button" class="pip-jump" data-vsec="9600" data-el="5291">Stratosphere</button>
+                <button type="button" class="pip-jump" data-vsec="22813" data-el="18504">Cutoff (6:20:13)</button>
+              </div>
+            </div>
+            <div class="pip-note" id="pipStatusNote">
+              Recovered from the Kapton-taped 128 GB SanDisk Extreme microSD card inside the crushed enclosure · Drag bottom-right corner to resize.
+            </div>
+          </div>
+          <div id="pipResizeGrip" class="pip-resize-grip" title="Drag to resize video player"></div>
+        </div>
+
+        <!-- Right Telemetry & Rotary Mechanism HUD Sidebar -->
+        <aside class="viewer-hud-sidebar" id="viewerHudSidebar">
+          <!-- Primary Flight Metrics -->
+          <div class="hud-card">
+            <div class="hud-card-header">
+              <span>FLIGHT TELEMETRY</span>
+              <span class="hud-coords" id="hudCoords">36.9280°N, 111.4510°W</span>
+            </div>
+            <div class="hud-metrics-grid">
+              <div class="hud-metric hud-metric-Featured">
+                <span class="hm-label">ALTITUDE (MSL)</span>
+                <span class="hm-val hm-cyan" id="hudAlt">4,267 ft</span>
+                <span class="hm-sub" id="hudAltSecondary">1,300.7 m · Above Ground: +95 ft</span>
+              </div>
+              <div class="hud-metric">
+                <span class="hm-label">GROUND SPEED</span>
+                <span class="hm-val" id="hudSpeed">0.0 mph</span>
+                <span class="hm-sub" id="hudHeading">Heading: --°</span>
+              </div>
+              <div class="hud-metric">
+                <span class="hm-label">VERTICAL RATE</span>
+                <span class="hm-val" id="hudVertRate">+0.0 ft/s</span>
+                <span class="hm-sub" id="hudBalloonScale">Envelope Vol: 1.0×</span>
+              </div>
+              <div class="hud-metric">
+                <span class="hm-label">OUTSIDE AIR TEMP</span>
+                <span class="hm-val" id="hudExtTemp">69.9 °F</span>
+                <span class="hm-sub" id="hudIntTemp">Inside Box: 65.1 °F</span>
+              </div>
+              <div class="hud-metric">
+                <span class="hm-label">BAROMETRIC PRESS</span>
+                <span class="hm-val" id="hudPress">868.8 hPa</span>
+                <span class="hm-sub" id="hudPressPct">85.7% Sea Level</span>
+              </div>
+              <div class="hud-metric">
+                <span class="hm-label">UV RADIATION (A/B)</span>
+                <span class="hm-val" id="hudUv">353 / 2.7</span>
+                <span class="hm-sub" id="hudHum">Humidity: 12.5% · Stage 0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Animated 5-Capsule Rotary Sampler Widget -->
+          <div class="hud-card hud-sampler-card">
+            <div class="hud-card-header">
+              <span>5-CAPSULE ROTARY SAMPLER</span>
+              <span class="pump-badge standby" id="hudPumpBadge">PUMP STANDBY</span>
+            </div>
+            <div class="sampler-viz-row">
+              <svg viewBox="0 0 160 160" class="rotary-svg" aria-label="Animated 5-Capsule Rotary Disk Position">
+                <!-- Outer housing ring -->
+                <circle cx="80" cy="80" r="72" fill="#09101f" stroke="rgba(148,163,184,0.28)" stroke-width="2" />
+                <!-- 5 Filter Capsules arranged around circle (angles: -90, -18, 54, 126, 198 deg) + Closed at -54 -->
+                <g id="svgCapsulesGroup">
+                  <g class="svg-cap" data-cap="1" transform="translate(80, 26)">
+                    <circle r="15" />
+                    <text y="4" text-anchor="middle">C1</text>
+                  </g>
+                  <g class="svg-cap" data-cap="2" transform="translate(131.4, 63.3)">
+                    <circle r="15" />
+                    <text y="4" text-anchor="middle">C2</text>
+                  </g>
+                  <g class="svg-cap" data-cap="3" transform="translate(111.7, 123.7)">
+                    <circle r="15" />
+                    <text y="4" text-anchor="middle">C3</text>
+                  </g>
+                  <g class="svg-cap" data-cap="4" transform="translate(48.3, 123.7)">
+                    <circle r="15" />
+                    <text y="4" text-anchor="middle">C4</text>
+                  </g>
+                  <g class="svg-cap" data-cap="5" transform="translate(28.6, 63.3)">
+                    <circle r="15" />
+                    <text y="4" text-anchor="middle">C5</text>
+                  </g>
+                </g>
+                <!-- Rotating Shutter Aperture Arm -->
+                <g id="svgShutterArm" transform="rotate(-54 80 80)">
+                  <line x1="80" y1="80" x2="80" y2="26" stroke="#38bdf8" stroke-width="3" stroke-dasharray="3 2" />
+                  <circle cx="80" cy="26" r="18" fill="none" stroke="#38bdf8" stroke-width="2.5" />
+                </g>
+                <!-- Center MG90S Servo Hub -->
+                <circle cx="80" cy="80" r="14" fill="#1e293b" stroke="#64748b" stroke-width="2" />
+                <circle cx="80" cy="80" r="4" fill="#38bdf8" />
+              </svg>
+
+              <div class="sampler-readout">
+                <div class="sampler-disk-pos" id="hudDiskState">Disk: Closed / Pre-Launch</div>
+                <div class="sampler-layer-desc" id="hudLayerDesc">Awaiting 14,000 ft (4,267 m) Troposphere trigger</div>
+                <div class="capsule-pills-mini" id="hudCapsulePills">
+                  <span data-c="1" title="Capsule 1: 14,000 ft">1</span>
+                  <span data-c="2" title="Capsule 2: 28,000 ft">2</span>
+                  <span data-c="3" title="Capsule 3: 42,000 ft">3</span>
+                  <span data-c="4" title="Capsule 4: 56,000 ft">4</span>
+                  <span data-c="5" title="Capsule 5: Float">5</span>
+                </div>
+                <div class="sampler-event-ticker" id="hudLastEvent">
+                  LOG: System initialized at Page, AZ
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Bottom Timeline Scrubber & Altitude Profile Bar -->
+        <div class="viewer-bottom-bar">
+          <!-- Quick-Jump Milestone Pills -->
+          <div class="milestone-jumps" id="milestoneJumpsBar">
+            <button type="button" class="ms-pill" data-el="1611">Liftoff</button>
+            <button type="button" class="ms-pill ms-cap" data-el="2185">Cap 1 · 14k ft</button>
+            <button type="button" class="ms-pill ms-cap" data-el="2976">Cap 2 · 28k ft</button>
+            <button type="button" class="ms-pill ms-cap" data-el="3727">Cap 3 · 42k ft</button>
+            <button type="button" class="ms-pill" data-el="4028">Coldest (-82°F)</button>
+            <button type="button" class="ms-pill ms-cap" data-el="4456">Cap 4 · 56k ft</button>
+            <button type="button" class="ms-pill ms-cap" data-el="5203">Cap 5 · Float</button>
+            <button type="button" class="ms-pill" data-el="17014">Peak · 84,185 ft</button>
+            <button type="button" class="ms-pill ms-danger" data-el="18206">Termination</button>
+          </div>
+
+          <div class="scrubber-controls-row">
+            <div class="transport-btns">
+              <button type="button" id="btnPlayPause" class="play-btn" aria-label="Play or Pause Flight Replay (Space)">
+                <span id="playIcon">▶</span>
+                <span id="playLabel">Play</span>
+              </button>
+              <button type="button" id="btnResetLiftoff" class="step-btn" title="Reset to Liftoff (06:49:21 AM MST)">↺</button>
+              <button type="button" id="btnStepBack" class="step-btn" title="Back 30 seconds">-30s</button>
+              <button type="button" id="btnStepFwd" class="step-btn" title="Forward 30 seconds">+30s</button>
+            </div>
+
+            <!-- Interactive Altitude Profile Canvas Scrubber -->
+            <div class="timeline-canvas-wrap" id="timelineTrackWrap">
+              <canvas id="timelineCanvas" height="46"></canvas>
+              <div id="timelinePlayhead" class="timeline-playhead"></div>
+              <div id="timelineHoverTip" class="timeline-hover-tip hidden"></div>
+            </div>
+
+            <!-- Speed Multiplier Selector -->
+            <div class="speed-selector" role="group" aria-label="Playback Speed">
+              <span class="speed-lbl">SPEED</span>
+              <button type="button" class="spd-btn" data-spd="1">1×</button>
+              <button type="button" class="spd-btn" data-spd="15">15×</button>
+              <button type="button" class="spd-btn" data-spd="60">60×</button>
+              <button type="button" class="spd-btn active" data-spd="120">120×</button>
+              <button type="button" class="spd-btn" data-spd="360">360×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         THE MISSION & SAMPLING PROFILE
+    ====================================================================== -->
+    <section id="mission" class="content-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="eyebrow">SCIENTIFIC OBJECTIVE &amp; METHODOLOGY</span>
+          <h2 class="section-title">Probing Vertical Particulate Distribution</h2>
+          <p class="section-desc">
+            From our initial NASA TechRise proposal through our final engineering build, our team set out to answer a deceptively simple question: <strong>how does the particulate and chemical makeup of Earth’s atmosphere change from the desert floor into the middle stratosphere?</strong>
+          </p>
+        </div>
+
+        <div class="two-col-cards">
+          <div class="glass-card">
+            <div class="card-kicker">OUR HYPOTHESIS</div>
+            <h3>Terrestrial Bio-Aerosols vs. High-Altitude Metals</h3>
+            <p>
+              We hypothesized that heavier biological and terrestrial particulates—such as pollen grains, ash, dust, bacteria, and fungal spores—would remain concentrated in the turbulent lower troposphere, dropping off sharply near the tropopause, while trace gases like CO₂ remain well-mixed.
+            </p>
+            <p>
+              Conversely, inspired by NOAA upper-atmosphere aerosol research, we hypothesized that stratospheric samples above 40,000–70,000 feet would capture exotic metallic particulates originating from meteoric ablation and spacecraft reentry debris not present near the ground.
+            </p>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-kicker">HOW THE SAMPLER WORKED IN FLIGHT</div>
+            <h3>Autonomous Altitude-Triggered Filtration</h3>
+            <ol class="clean-steps">
+              <li><strong>Altitude Lock:</strong> Our Adafruit Metro M4 Express continuously monitored real-time GPS altitude packets from World View’s flight computer via the Payload Interface Board (PIB).</li>
+              <li><strong>Rotary Indexing:</strong> Upon crossing each programmed threshold, an MG90S servo rotated a 3D-printed shutter disk to uncover a dedicated capsule containing a <strong>0.1 µm polycarbonate membrane filter</strong>.</li>
+              <li><strong>Active Vacuum Draw &amp; Seal:</strong> A 4.5 V DC pump pulled outside air through that filter for 7 minutes during ascent (and 3.5 hours at float), then rotated the shutter to an airtight intermediate seal before the next layer.</li>
+              <li><strong>Unexposed Control:</strong> A sixth rear-mounted control filter capsule remained unexposed to establish a clean baseline for post-flight Scanning Electron Microscopy (SEM).</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Real Planned vs. Actual Activation Heights Table from Activation Heights.xlsx & events_log.txt -->
+        <div class="glass-card table-card">
+          <div class="table-card-header">
+            <div>
+              <span class="card-kicker">VERIFIED FROM ACTIVATION HEIGHTS.XLSX &amp; EVENTS_LOG.TXT</span>
+              <h3>In-Flight Capsule Actuation Log</h3>
+            </div>
+            <span class="badge badge-emerald">5 / 5 Stages Executed Nominally in Flight</span>
+          </div>
+          <div class="table-responsive">
+            <table class="aero-table">
+              <thead>
+                <tr>
+                  <th>Capsule</th>
+                  <th>Atmospheric Target Layer</th>
+                  <th>Planned Trigger</th>
+                  <th>Actual Open Altitude</th>
+                  <th>Actual Seal Altitude</th>
+                  <th>Pump Duration</th>
+                  <th>Jump in 3D</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="cap-dot" style="background:#38bdf8"></span><strong>Capsule 1</strong></td>
+                  <td>Troposphere Layer</td>
+                  <td>14,000 ft <span class="muted">(4,267 m)</span></td>
+                  <td class="mono">14,008 ft <span class="muted">(4,269.6 m)</span></td>
+                  <td class="mono">21,228 ft <span class="muted">(6,470.4 m)</span></td>
+                  <td class="mono">7m 02s <span class="muted">(422 s)</span></td>
+                  <td><button type="button" class="table-jump-btn" data-jump-el="2185">View in 3D →</button></td>
+                </tr>
+                <tr>
+                  <td><span class="cap-dot" style="background:#22d3ee"></span><strong>Capsule 2</strong></td>
+                  <td>Near Tropopause (Jet Stream)</td>
+                  <td>28,000 ft <span class="muted">(8,534 m)</span></td>
+                  <td class="mono">28,006 ft <span class="muted">(8,536.3 m)</span></td>
+                  <td class="mono">35,789 ft <span class="muted">(10,908.6 m)</span></td>
+                  <td class="mono">7m 00s <span class="muted">(420 s)</span></td>
+                  <td><button type="button" class="table-jump-btn" data-jump-el="2976">View in 3D →</button></td>
+                </tr>
+                <tr>
+                  <td><span class="cap-dot" style="background:#818cf8"></span><strong>Capsule 3</strong></td>
+                  <td>Lower Stratosphere</td>
+                  <td>42,000 ft <span class="muted">(12,801 m)</span></td>
+                  <td class="mono">42,009 ft <span class="muted">(12,804.5 m)</span></td>
+                  <td class="mono">49,942 ft <span class="muted">(15,222.4 m)</span></td>
+                  <td class="mono">7m 02s <span class="muted">(422 s)</span></td>
+                  <td><button type="button" class="table-jump-btn" data-jump-el="3727">View in 3D →</button></td>
+                </tr>
+                <tr>
+                  <td><span class="cap-dot" style="background:#a78bfa"></span><strong>Capsule 4</strong></td>
+                  <td>Mid-Stratosphere Ascent</td>
+                  <td>56,000 ft <span class="muted">(17,068 m)</span></td>
+                  <td class="mono">56,001 ft <span class="muted">(17,069.0 m)</span></td>
+                  <td class="mono">63,996 ft <span class="muted">(19,506.1 m)</span></td>
+                  <td class="mono">6m 59s <span class="muted">(419 s)</span></td>
+                  <td><button type="button" class="table-jump-btn" data-jump-el="4456">View in 3D →</button></td>
+                </tr>
+                <tr>
+                  <td><span class="cap-dot" style="background:#f59e0b"></span><strong>Capsule 5</strong></td>
+                  <td>Peak Stratospheric Float</td>
+                  <td>Float Entry <span class="muted">(~70,800 ft)</span></td>
+                  <td class="mono">70,779 ft <span class="muted">(21,573.4 m)</span></td>
+                  <td class="mono">83,755 ft <span class="muted">(25,528.4 m)</span></td>
+                  <td class="mono">3h 30m 00s <span class="muted">(12,600 s)</span></td>
+                  <td><button type="button" class="table-jump-btn" data-jump-el="5203">View in 3D →</button></td>
+                </tr>
+                <tr class="control-row">
+                  <td><span class="cap-dot" style="background:#10b981"></span><strong>Control</strong></td>
+                  <td>Rear Shielded Baseline</td>
+                  <td>Unexposed</td>
+                  <td class="mono">Sealed Rear Bay</td>
+                  <td class="mono">Only Surviving Sample</td>
+                  <td class="mono">0s <span class="muted">(Control)</span></td>
+                  <td><a href="#discovery" class="table-jump-link">SEM Results ↓</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         PAYLOAD ENGINEERING & PROTOTYPING EVOLUTION
+    ====================================================================== -->
+    <section id="engineering" class="content-section section-alt">
+      <div class="container">
+        <div class="section-header">
+          <span class="eyebrow">HARDWARE ARCHITECTURE &amp; ITERATIVE DESIGN</span>
+          <h2 class="section-title">From 12 Solenoid Valves to a Single Rotary Disk</h2>
+          <p class="section-desc">
+            Strict suborbital constraints—a <strong>1,000 g mass limit</strong>, tight volume inside the TechRise flight box, and a strict electrical current cap—forced us to rethink our mechanical architecture from scratch.
+          </p>
+        </div>
+
+        <!-- Interactive Engineering Iteration Tabs -->
+        <div class="eng-tabs-bar" role="tablist">
+          <button type="button" class="eng-tab active" data-etab="final">Final Flight Payload</button>
+          <button type="button" class="eng-tab" data-etab="v2">Prototype V2: 5-Port Rotary Rig</button>
+          <button type="button" class="eng-tab" data-etab="v1">Concept V1: 12-Valve Manifold</button>
+          <button type="button" class="eng-tab" data-etab="wiring">Electronics &amp; Wiring Schematic</button>
+        </div>
+
+        <!-- Tab 1: Final Flight Payload -->
+        <div class="eng-panel active" id="epanel-final">
+          <div class="final-build-grid">
+            <div class="photo-card" data-lightbox="assets/images/hardware/final_payload_front.jpg" data-caption="Front/3-quarter view of the completed flight payload: white 3D-printed 5-port rotary shutter disk (top), cyan 1080p camera mount (middle), and 4 atmospheric sensors facing the open sky window (bottom).">
+              <img src="assets/images/hardware/final_payload_front.jpg" alt="Final Payload Front Rotary Disk and Sensor Face" loading="lazy" />
+              <div class="photo-caption">
+                <strong>Exterior Sampling &amp; Sensing Face</strong>
+                <span>Rotary shutter plate, 1080p dash camera lens, and quad environmental sensor mount.</span>
+              </div>
+            </div>
+
+            <div class="photo-card" data-lightbox="assets/images/hardware/final_payload_electronics.jpg" data-caption="Interior electronics stack: Adafruit Metro M4 Express microcontroller (bottom right), dual H-bridge motor drivers for pump and rotary actuator, solderable breadboard bus, and TechRise Payload Interface Board (top endcap).">
+              <img src="assets/images/hardware/final_payload_electronics.jpg" alt="Final Payload Internal Electronics and Wiring" loading="lazy" />
+              <div class="photo-caption">
+                <strong>Internal Avionics &amp; Manifold Stack</strong>
+                <span>Metro M4 Express, solderable distribution board, dual motor drivers, PIB, and equal-length silicone pump manifold.</span>
+              </div>
+            </div>
+
+            <div class="specs-stack">
+              <div class="spec-box">
+                <h4>Mechanical &amp; Fluidic Design</h4>
+                <ul>
+                  <li><strong>5-Capsule Circular Array:</strong> Five filter holders arranged radially behind a custom 3D-printed rotating aperture disk, plus 1 rear control capsule.</li>
+                  <li><strong>Equal-Length Tubing Manifold:</strong> All capsule back-ports routed via equal-length silicone lines to a central 4.5 V DC vacuum pump so suction pressure stayed uniform across every port.</li>
+                  <li><strong>0.1 µm Membrane Filters:</strong> Polycarbonate track-etched filter membranes chosen specifically for flat, smooth particle imaging under Scanning Electron Microscopy.</li>
+                </ul>
+              </div>
+              <div class="spec-box">
+                <h4>Avionics &amp; Sensor Suite</h4>
+                <ul>
+                  <li><strong>MCU:</strong> Adafruit Metro M4 Express running CircuitPython + SPI microSD breakout logger.</li>
+                  <li><strong>Bosch BME688:</strong> Internal temperature, barometric pressure, relative humidity, and MOX gas resistance.</li>
+                  <li><strong>AMS AS7331:</strong> Precision 3-channel ultraviolet irradiance (UVA, UVB, UVC).</li>
+                  <li><strong>SGP30 &amp; ScioSense ENS160:</strong> Dual MOX air-quality sensors measuring eCO₂, TVOC, and AQI via STEMMA QT I²C.</li>
+                  <li><strong>Sensirion SPS30 &amp; 1080p Camera:</strong> Laser particulate sensor + continuous HD horizon camera with 128 GB microSD.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Prototype V2 -->
+        <div class="eng-panel" id="epanel-v2">
+          <div class="proto-grid-4">
+            <div class="photo-card" data-lightbox="assets/images/hardware/v2_whiteboard_sketch.jpg" data-caption="Classroom whiteboard breakthrough: replacing 12 power-hungry solenoid valves with a 5-capsule circular manifold and a single rotating shutter plate.">
+              <img src="assets/images/hardware/v2_whiteboard_sketch.jpg" alt="Whiteboard Sketch of 5-Capsule Rotary Sampler" loading="lazy" />
+              <div class="photo-caption">
+                <strong>1. Whiteboard Breakthrough</strong>
+                <span>Circular 5-filter ring manifold routed to one central vacuum pump.</span>
+              </div>
+            </div>
+            <div class="photo-card" data-lightbox="assets/images/hardware/v2_rotary_plate_cad.jpg" data-caption="3D CAD slicer preview of the 5-hole capsule mounting bracket with center servo shaft cutout and corner standoff posts.">
+              <img src="assets/images/hardware/v2_rotary_plate_cad.jpg" alt="3D CAD Model of 5-Hole Capsule Mounting Plate" loading="lazy" />
+              <div class="photo-caption">
+                <strong>2. Parametric 3D CAD</strong>
+                <span>5-port capsule retention plate with central servo pocket.</span>
+              </div>
+            </div>
+            <div class="photo-card" data-lightbox="assets/images/hardware/v2_3dprinted_rig.jpg" data-caption="First physical 3D-printed mechanical prototype (green and blue PLA) clamping five translucent filter capsules with rear servo actuator.">
+              <img src="assets/images/hardware/v2_3dprinted_rig.jpg" alt="3D Printed Green and Blue Capsule Clamp Prototype" loading="lazy" />
+              <div class="photo-caption">
+                <strong>3. Bench Mechanical Rig</strong>
+                <span>Testing capsule compression seals and rotary shutter torque.</span>
+              </div>
+            </div>
+            <div class="photo-card" data-lightbox="assets/images/hardware/v2_cardboard_mockup.jpg" data-caption="Full-scale cardboard flight box fit-check verifying tubing bend radii, Metro M4 clearance, 4-sensor plate, and vacuum pump placement.">
+              <img src="assets/images/hardware/v2_cardboard_mockup.jpg" alt="Cardboard Flight Box Fit Check Mockup" loading="lazy" />
+              <div class="photo-caption">
+                <strong>4. Full-Scale Fit Mockup</strong>
+                <span>Verifying 5-way silicone manifold clearances inside the box footprint.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Concept V1 -->
+        <div class="eng-panel" id="epanel-v1">
+          <div class="proto-grid-3">
+            <div class="photo-card" data-lightbox="assets/images/hardware/v1_12tube_diagram.jpg" data-caption="Original 12-port concept: twelve open intake tubes with individual solenoid valves connected to a common vacuum header. Exceeded electrical current limits and reduced pump suction.">
+              <img src="assets/images/hardware/v1_12tube_diagram.jpg" alt="Original 12-Tube Valve Concept Schematic" loading="lazy" />
+              <div class="photo-caption">
+                <strong>Original 12-Valve Concept</strong>
+                <span>12 solenoid valves drew too much current and split pump suction too thinly.</span>
+              </div>
+            </div>
+            <div class="photo-card" data-lightbox="assets/images/hardware/v1_perforated_tube_cad.jpg" data-caption="Early CAD iteration exploring a perforated cylindrical support core wrapped in filter paper or Teflon membrane.">
+              <img src="assets/images/hardware/v1_perforated_tube_cad.jpg" alt="Perforated Cylindrical Filter Holder CAD" loading="lazy" />
+              <div class="photo-caption">
+                <strong>Perforated Cylinder Sampler V1</strong>
+                <span>Early concept wrapping filter membrane around a perforated tube core.</span>
+              </div>
+            </div>
+            <div class="photo-card" data-lightbox="assets/images/hardware/v1_cylinder_cad.jpg" data-caption="Early linear screw-driven sliding sleeve concept explored before converging on the much lighter flat rotary shutter disk.">
+              <img src="assets/images/hardware/v1_cylinder_cad.jpg" alt="Linear Actuator Sleeve Sampler Concept CAD" loading="lazy" />
+              <div class="photo-caption">
+                <strong>Threaded Sleeve Concept</strong>
+                <span>Linear actuator concept traded away in favor of the compact flat rotary disk.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Wiring Diagram -->
+        <div class="eng-panel" id="epanel-wiring">
+          <div class="wiring-showcase">
+            <div class="photo-card wiring-card" data-lightbox="assets/images/hardware/wiring_diagram.jpg" data-caption="Complete TR5 World 24 payload electrical schematic created by the Avionics &amp; Wiring Team: Adafruit Metro M4 Express, PIB power/UART interface, SPI microSD breakout, STEMMA QT I²C sensor chain (BME688, SGP30, ENS160, AS7331), SPS30, dual motor drivers, rotary motor, air pump, and dash camera.">
+              <img src="assets/images/hardware/wiring_diagram.jpg" alt="TR5 World 24 Complete Electrical Wiring Schematic" loading="lazy" />
+              <div class="photo-caption">
+                <strong>Complete Flight Avionics Wiring Diagram (Click to Zoom Full Resolution)</strong>
+                <span>Power distribution, UART telemetry from NASA PIB, SPI SD logging, STEMMA QT I²C bus, and dual H-bridge motor drivers.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         FLIGHT TELEMETRY & ATMOSPHERIC ANALYTICS
+    ====================================================================== -->
+    <section id="telemetry" class="content-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="eyebrow">REAL SENSOR DATA FROM WORLD_24.TXT &amp; ERROR_LOG.TXT</span>
+          <h2 class="section-title">Atmospheric Profiles &amp; Forensic Telemetry</h2>
+          <p class="section-desc">
+            Raw flight file <code>WORLD_24.txt</code> contains <strong>21,543 lines across 30 power-on sessions</strong> (including pre-flight classroom simulator runs and pad checks). Isolating <strong>Session 28</strong> (the 16,461-row flight from Page, AZ) and <strong>Sessions 29–30</strong> (post-termination freefall) reveals textbook stratospheric physics—plus the exact barometric signature of the crash.
+          </p>
+        </div>
+
+        <div class="charts-grid">
+          <!-- Chart 1: Thermal Inversion -->
+          <div class="glass-card chart-card">
+            <div class="chart-header">
+              <div>
+                <span class="card-kicker">TROPOSPHERE → TROPOPAUSE → STRATOSPHERE</span>
+                <h3>Vertical Temperature Inversion</h3>
+              </div>
+            </div>
+            <p class="chart-blurb">
+              Outside air cooled steadily during ascent to <strong>-63.2 °C (-81.8 °F)</strong> near the 15.5 km tropopause before warming in the ozone layer. Meanwhile, inside the unventilated near-vacuum flight box (23.8 hPa), solar heating warmed our payload from -21.8 °C up to +38.3 °C.
+            </p>
+            <div class="canvas-holder">
+              <canvas id="chartTempProfile"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Pressure & Humidity -->
+          <div class="glass-card chart-card">
+            <div class="chart-header">
+              <div>
+                <span class="card-kicker">NEAR-VACUUM ENVIRONMENT</span>
+                <h3>Barometric Pressure &amp; Desert Humidity</h3>
+              </div>
+            </div>
+            <p class="chart-blurb">
+              Ambient pressure fell exponentially from <strong>868.8 hPa (12.59 PSI)</strong> at Page Municipal Airport (4,173 ft) down to <strong>22.2 hPa (0.39 PSI)</strong> at 84,185 ft—leaving over <strong>97.6% of Earth’s atmosphere below our experiment</strong> as humidity dropped to 0.0%.
+            </p>
+            <div class="canvas-holder">
+              <canvas id="chartPressure"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 3: UV Radiation -->
+          <div class="glass-card chart-card">
+            <div class="chart-header">
+              <div>
+                <span class="card-kicker">ABOVE THE OZONE SHIELD · AS7331</span>
+                <h3>Stratospheric UV Radiation Surge</h3>
+              </div>
+            </div>
+            <p class="chart-blurb">
+              Climbing above most of Earth’s protective ozone column caused <strong>UVA</strong> to jump nearly <strong>20×</strong> and energetic <strong>UVB</strong> to surge over <strong>85×</strong> ground levels. Rapid oscillations reflect the suspended gondola rotating gently toward and away from direct sunlight.
+            </p>
+            <div class="canvas-holder">
+              <canvas id="chartUv"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 4: Post-Termination Rapid Descent Forensics -->
+          <div class="glass-card chart-card chart-card-forensic">
+            <div class="chart-header">
+              <div>
+                <span class="card-kicker accent-crimson">CRASH FORENSICS · SESSIONS 29 &amp; 30</span>
+                <h3>124 MPH Post-Termination Plunge</h3>
+              </div>
+            </div>
+            <p class="chart-blurb">
+              After flight termination at 83,679 ft, World View telemetry disconnected—but our Metro M4 briefly rebooted twice in mid-air! Across 151 seconds, our <code>BME688</code> barometer logged altitude plunging from <strong>35,259 ft (10,747 m) down to 7,631 ft (2,326 m)</strong> at <strong>55.3 m/s (124 mph)</strong> right before impact.
+            </p>
+            <div class="canvas-holder">
+              <canvas id="chartDescent"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Honest Telemetry Challenges Callout (error_log.txt) -->
+        <div class="glass-card i2c-callout">
+          <div class="i2c-info">
+            <span class="card-kicker accent-amber">ENGINEERING TRANSPARENCY · DIGITAL TELEMETRY CHALLENGES</span>
+            <h3>Understanding Our 1,992 Logged I²C Bus Errors (<code>[Errno 5]</code>)</h3>
+            <p>
+              Real suborbital flight testing exposes hardware to harsh thermal swings (-63 °C external) and near-vacuum conditions. During the flight, our <code>error_log.txt</code> recorded <strong>1,992 <code>[Errno 5] Input/output error</code></strong> events in 15-retry bursts along the STEMMA QT I²C sensor chain:
+            </p>
+            <ul class="compact-list">
+              <li><strong>SPS30 Optical Particulate Sensor:</strong> Failed to initialize on the bus during flight, preventing continuous laser PM comparisons against our physical filters.</li>
+              <li><strong>Intermittent Dropouts &amp; Register Bit-Flips:</strong> Temporary I²C NACK bursts created brief <code>N/A</code> gaps (~11.7% of AS7331 UV rows and ~3.8% of BME688 rows) and exactly <strong>5 single-second register bit-flip spikes</strong> on the BME688 (reading <code>195.59 °C</code> / <code>-263.8 hPa</code>).</li>
+              <li><strong>Resilient Fault Handling:</strong> Because our CircuitPython code caught I²C exceptions rather than crashing the main loop, the Metro M4 kept running for the entire 5+ hour mission—successfully triggering every single motor &amp; pump stage!</li>
+            </ul>
+          </div>
+          <div class="i2c-chart-box">
+            <div class="mini-chart-title">I²C Sensor Error Bursts per 10-Min Flight Window</div>
+            <div class="canvas-holder-sm">
+              <canvas id="chartErrors"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         CRASH, RECOVERY & FORENSICS
+    ====================================================================== -->
+    <section id="recovery" class="content-section section-alt">
+      <div class="container">
+        <div class="section-header">
+          <span class="eyebrow">END-OF-FLIGHT ANOMALY &amp; PAYLOAD RECOVERY</span>
+          <h2 class="section-title">When Flight Testing Hits Hard</h2>
+          <p class="section-desc">
+            At the end of the flight over the rugged Arizona Strip, something went wrong during descent and landing. When the shipping box arrived back in Wisconsin, our payload enclosure had been violently crushed—and only one sample survived.
+          </p>
+        </div>
+
+        <div class="recovery-featured-grid">
+          <!-- Left: Crushed Box + NASA Letter -->
+          <div class="photo-card recovery-hero-photo" data-lightbox="assets/images/recovery/box_and_letter.jpg" data-caption="Unpacking day (July 10, 2026): Our buckled, shattered World 24 flight enclosure alongside the official letter from Danielle McCulloch, Program Executive for NASA's Flight Opportunities Program.">
+            <img src="assets/images/recovery/box_and_letter.jpg" alt="Crushed World 24 Flight Box next to Official NASA Flight Opportunities Letter" loading="lazy" />
+            <div class="photo-caption">
+              <strong>Returned from the Stratosphere (Click to Inspect)</strong>
+              <span>The buckled aluminum-and-polycarbonate flight enclosure alongside NASA’s official post-flight letter.</span>
+            </div>
+          </div>
+
+          <!-- Right: Quote from NASA Letter + View Full Letter -->
+          <div class="glass-card nasa-letter-card">
+            <div class="nasa-letter-top">
+              <span class="badge badge-amber">NASA Armstrong Flight Research Center</span>
+              <button type="button" class="btn-text-zoom" data-lightbox="assets/images/recovery/nasa_letter.jpg" data-caption="Official letter from Danielle McCulloch, Program Executive, NASA's Flight Opportunities Program (Armstrong Flight Research Center, Edwards, CA).">
+                Read Full Signed Letter ↗
+              </button>
+            </div>
+            <blockquote>
+              “As you can see, your payload sustained damage during the flight. This is always a risk in flight testing, as you learned from your TechRise mentors along the way… When conducting research — and especially in flight testing — things sometimes don’t go as planned. But we learn from the experience and apply those lessons to our future endeavors. That is the true definition of success.”
+            </blockquote>
+            <div class="quote-attrib">
+              <strong>— Danielle McCulloch</strong>
+              <span>Program Executive, NASA’s Flight Opportunities Program</span>
+            </div>
+
+            <div class="damage-summary-boxes">
+              <div class="dmg-item dmg-lost">
+                <strong>Lost on Impact</strong>
+                <span>5 front active altitude filter capsules shattered/ejected; 3D-printed mounts sheared; aluminum frame buckled.</span>
+              </div>
+              <div class="dmg-item dmg-saved">
+                <strong>Miraculously Recovered</strong>
+                <span>1 rear shielded <strong>Control Capsule</strong> intact + microSD telemetry logs + 128 GB Kapton-taped video card!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3-Photo Forensic Gallery -->
+        <div class="proto-grid-3 recovery-subgrid">
+          <div class="photo-card" data-lightbox="assets/images/recovery/forensic_teardown_table.jpg" data-caption="Complete post-flight forensic layout: buckled white metal frame (left), NASA Payload Interface Board labeled 'W 24', Metro M4 Express, sheared cyan 3D-printed camera brackets, fractured acrylic side panel, silicone pump tubing, and wiring harness.">
+            <img src="assets/images/recovery/forensic_teardown_table.jpg" alt="Post-Flight Forensic Teardown Table Layout" loading="lazy" />
+            <div class="photo-caption">
+              <strong>Post-Flight Forensic Teardown</strong>
+              <span>Every recovered subsystem laid out—note the green NASA PIB still bearing its <code>W 24</code> flight tag.</span>
+            </div>
+          </div>
+
+          <div class="photo-card" data-lightbox="assets/images/recovery/crushed_chassis_closeup.jpg" data-caption="Close-up of the deformed aluminum payload shell showing the high-G impact folding along the corners and endcap.">
+            <img src="assets/images/recovery/crushed_chassis_closeup.jpg" alt="Close-up of Buckled Aluminum Payload Frame" loading="lazy" />
+            <div class="photo-caption">
+              <strong>High-Energy Impact Deformation</strong>
+              <span>Severe corner buckling consistent with the 124 mph descent rate logged in Session 29.</span>
+            </div>
+          </div>
+
+          <div class="photo-card" data-lightbox="assets/images/recovery/surviving_sd_card.jpg" data-caption="Why the 15 GB flight video survived: a strip of amber Kapton tape held the 128 GB SanDisk Extreme microSD card locked inside the detached camera board socket through impact!">
+            <img src="assets/images/recovery/surviving_sd_card.jpg" alt="Surviving 128GB SanDisk MicroSD Card Held by Kapton Tape" loading="lazy" />
+            <div class="photo-caption">
+              <strong>How the 15 GB Video Survived</strong>
+              <span>Kapton tape kept the 128 GB SanDisk Extreme card seated on the camera PCB during crash impact.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         THE SILVER LINING: UW-MADISON SEM & ZIRCONIUM DISCOVERY
+    ====================================================================== -->
+    <section id="discovery" class="content-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="eyebrow">SCANNING ELECTRON MICROSCOPY · UW–MADISON · JULY 22, 2026</span>
+          <h2 class="section-title">The Surviving Control Sample &amp; Zirconium Discovery</h2>
+          <p class="section-desc">
+            With only the rear-mounted control filter capsule surviving the crash, we brought the preserved <strong>0.1 µm polycarbonate membrane</strong> to a professor at the <strong>University of Wisconsin–Madison</strong> for high-resolution Scanning Electron Microscopy (SEM) and Energy Dispersive X-ray Spectroscopy (EDS). What we found on that “unexposed” filter surprised everyone.
+          </p>
+        </div>
+
+        <div class="sem-interactive-grid">
+          <!-- Left: High-Res SEM Viewer + Magnifier Loupe + EDS Overlay -->
+          <div class="glass-card sem-stage-card">
+            <div class="sem-toolbar">
+              <div class="sem-view-btns" role="group" aria-label="SEM Magnification View">
+                <button type="button" class="sem-vbtn active" data-sem="35kx">34.97 KX · 10.0 kV (HD)</button>
+                <button type="button" class="sem-vbtn" data-sem="29kx">29.46 KX · 1.0 kV (Surface)</button>
+              </div>
+              <label class="loupe-toggle">
+                <input type="checkbox" id="chkSemLoupe" checked />
+                <span>🔍 Hover 2.8× Loupe</span>
+              </label>
+            </div>
+
+            <!-- Interactive SEM Viewport -->
+            <div class="sem-viewport" id="semViewport">
+              <img id="semBaseImg" src="assets/images/sem/zirconium_sem_35kx.jpg" alt="UW-Madison Scanning Electron Micrograph of 3.3 micrometer Zirconium-bearing particle on porous membrane filter" />
+              <!-- Alignable EDS Spectral Overlay (applies over the electron field region above bottom info bar) -->
+              <img id="semEdsOverlay" class="sem-eds-overlay" src="assets/images/sem/eds_map_Zr.png" alt="EDS Elemental X-Ray Map Overlay" style="opacity: 0;" />
+              <div id="semMagnifier" class="sem-magnifier hidden" aria-hidden="true"></div>
+            </div>
+
+            <!-- EDS Overlay Blend Slider -->
+            <div class="sem-overlay-controls">
+              <div class="overlay-slider-label">
+                <span>Superimpose Selected Element Map (<strong id="overlayElemLabel">Zr Lα1</strong>) on SEM:</span>
+                <span class="mono" id="overlayPctVal">0%</span>
+              </div>
+              <input type="range" id="edsOverlaySlider" min="0" max="85" value="0" class="aero-slider" />
+            </div>
+          </div>
+
+          <!-- Right: 8-Element EDS Spectral Explorer -->
+          <div class="glass-card eds-explorer-card">
+            <div class="card-kicker accent-emerald">ENERGY DISPERSIVE X-RAY SPECTROSCOPY (EDS)</div>
+            <h3>Elemental Composition Mapping</h3>
+            <p class="eds-intro">
+              Click any X-ray emission line below to inspect its spatial distribution across the ~1.8 µm particle cluster (<code>1 µm</code> scale bar) and blend it onto the electron micrograph:
+            </p>
+
+            <!-- Element Selector Pills -->
+            <div class="eds-pills-grid" id="edsPillsGrid">
+              <button type="button" class="eds-pill active" data-el="Zr" style="--ec:#2dd4bf">
+                <span class="el-sym">Zr</span><span class="el-name">Zirconium Lα1</span>
+              </button>
+              <button type="button" class="eds-pill" data-el="O" style="--ec:#4ade80">
+                <span class="el-sym">O</span><span class="el-name">Oxygen Kα1</span>
+              </button>
+              <button type="button" class="eds-pill" data-el="P" style="--ec:#3b82f6">
+                <span class="el-sym">P</span><span class="el-name">Phosphorus Kα1</span>
+              </button>
+              <button type="button" class="eds-pill" data-el="Ni" style="--ec:#d946ef">
+                <span class="el-sym">Ni</span><span class="el-name">Nickel Lα1,2</span>
+              </button>
+              <button type="button" class="eds-pill" data-el="Ce" style="--ec:#84cc16">
+                <span class="el-sym">Ce</span><span class="el-name">Cerium Lα1</span>
+              </button>
+              <button type="button" class="eds-pill" data-el="Fe" style="--ec:#f97316">
+                <span class="el-sym">Fe</span><span class="el-name">Iron Kα1</span>
+              </button>
+              <button type="button" class="eds-pill" data-el="Cr" style="--ec:#eab308">
+                <span class="el-sym">Cr</span><span class="el-name">Chromium Kα1</span>
+              </button>
+              <button type="button" class="eds-pill" data-el="C" style="--ec:#ef4444">
+                <span class="el-sym">C</span><span class="el-name">Carbon Kα1,2</span>
+              </button>
+            </div>
+
+            <!-- Selected Element Detail Box -->
+            <div class="eds-detail-box">
+              <div class="eds-card-preview" data-lightbox="assets/images/sem/eds_composite_grid.png" data-caption="Full 8-channel EDS X-ray elemental mapping acquired at UW–Madison: Carbon (C Kα1,2 filter membrane background), Zirconium (Zr Lα1), Phosphorus (P Kα1), Oxygen (O Kα1), Nickel (Ni Lα1,2), Cerium (Ce Lα1), Iron (Fe Kα1), and Chromium (Cr Kα1).">
+                <img id="edsSelectedCardImg" src="assets/images/sem/eds_card_Zr.png" alt="Selected Element EDS X-Ray Map" />
+                <span class="zoom-hint">View All 8 Maps ↗</span>
+              </div>
+              <div class="eds-element-explanation">
+                <h4 id="edsDetailTitle">Zirconium (Zr Lα1) — Primary Discovery</h4>
+                <p id="edsDetailBody">
+                  Intense, sharply bounded Zr Lα1 X-ray emission maps directly to the ~1.8 µm crystalline/agglomerated grain sitting atop the 0.1 µm polycarbonate pores. Co-localized with Oxygen and Phosphorus (consistent with zirconium phosphate/oxide or refractory zircon-type mineral/aerospace alloy phase).
+                </p>
+              </div>
+            </div>
+
+            <div class="scientific-interpretation">
+              <h4>What Does Finding This on the Control Capsule Mean?</h4>
+              <p>
+                Finding refractory metallic and mineral microparticles—including a unique <strong>zirconium-bearing grain</strong> alongside Ni, Fe, Cr, and Ce signatures—on the rear shielded control capsule proved two key points:
+              </p>
+              <ol class="compact-ordered">
+                <li><strong>Containment vs. Extreme Environments:</strong> Passive rear shielding without hermetic positive-pressure seals still permitted micron-scale stratospheric/ambient or crash-intrusion aerosols to reach the control membrane—crucial feedback for designing future suborbital sample-return chambers.</li>
+                <li><strong>Validated SEM/EDS Pipeline:</strong> The 0.1 µm track-etched polycarbonate membrane preserved sub-micron particle morphology cleanly at 34,970× magnification, validating our post-flight analytical methodology at UW–Madison.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         TEAM, LESSONS LEARNED & ACKNOWLEDGEMENTS
+    ====================================================================== -->
+    <section id="team" class="content-section section-alt">
+      <div class="container">
+        <div class="section-header">
+          <span class="eyebrow">OCONOMOWOC HIGH SCHOOL ROCKETRY CLUB · WISCONSIN</span>
+          <h2 class="section-title">The Student Engineering Team</h2>
+          <p class="section-desc">
+            Built from concept to flight readiness in Oconomowoc, Wisconsin, with guidance from our teacher lead and professional NASA TechRise &amp; Future Engineers mentors.
+          </p>
+        </div>
+
+        <div class="team-roster-grid">
+          <div class="member-card">
+            <span class="member-role">Project Manager · Mounting · Wiring · Soldering</span>
+            <h3>Will S.</h3>
+          </div>
+          <div class="member-card">
+            <span class="member-role">Coding · Wiring · Soldering · Mounting</span>
+            <h3>Max S.</h3>
+          </div>
+          <div class="member-card">
+            <span class="member-role">Coding · Wiring · Soldering</span>
+            <h3>Ayden P.</h3>
+          </div>
+          <div class="member-card">
+            <span class="member-role">Mounting · Wiring · Soldering</span>
+            <h3>Brady K.</h3>
+          </div>
+          <div class="member-card">
+            <span class="member-role">Wiring Schematic · Mounting</span>
+            <h3>Brayden O.</h3>
+          </div>
+          <div class="member-card">
+            <span class="member-role">Soldering · Mounting · Documentation</span>
+            <h3>Hailey K.</h3>
+          </div>
+        </div>
+
+        <!-- Classroom Build Photos -->
+        <div class="proto-grid-4 team-photos-grid">
+          <div class="photo-card" data-lightbox="assets/images/team/team_soldering_trio.jpg" data-caption="Team members collaborating on precision PCB soldering in the Oconomowoc High School engineering lab.">
+            <img src="assets/images/team/team_soldering_trio.jpg" alt="Oconomowoc High School students soldering payload electronics" loading="lazy" />
+            <div class="photo-caption">
+              <strong>Avionics Soldering</strong>
+              <span>Assembling sensor headers and power distribution boards in the OHS lab.</span>
+            </div>
+          </div>
+          <div class="photo-card" data-lightbox="assets/images/team/team_soldering_qual.jpg" data-caption="Passing the NASA TechRise soldering qualification and assembling circuit boards.">
+            <img src="assets/images/team/team_soldering_qual.jpg" alt="Student soldering circuit board with safety glasses" loading="lazy" />
+            <div class="photo-caption">
+              <strong>Board Qualification</strong>
+              <span>Every soldering team member passed formal solder joint inspection.</span>
+            </div>
+          </div>
+          <div class="photo-card" data-lightbox="assets/images/team/team_cad_coding.jpg" data-caption="Reviewing the Engineering Notebook, Adafruit Metro M4 pinouts, and enclosure panel layouts.">
+            <img src="assets/images/team/team_cad_coding.jpg" alt="Student working on Metro M4 wiring diagram and CAD layout" loading="lazy" />
+            <div class="photo-caption">
+              <strong>Systems Integration</strong>
+              <span>Mapping Metro M4 pins, panel drill templates, and CircuitPython logic.</span>
+            </div>
+          </div>
+          <div class="photo-card" data-lightbox="assets/images/team/team_soldering_bench.jpg" data-caption="Precision bench work preparing components for final flight box integration.">
+            <img src="assets/images/team/team_soldering_bench.jpg" alt="Student soldering component wiring at lab bench" loading="lazy" />
+            <div class="photo-caption">
+              <strong>Flight Prep</strong>
+              <span>Transitioning from breadboard prototypes to epoxied flight hardware.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lessons Learned & Acknowledgements -->
+        <div class="two-col-cards lessons-grid">
+          <div class="glass-card">
+            <div class="card-kicker">KEY LESSONS LEARNED</div>
+            <h3>What Suborbital Engineering Taught Us</h3>
+            <ul class="compact-list">
+              <li><strong>Focus &amp; Time Management:</strong> Our biggest takeaway during the build was not getting sidetracked troubleshooting edge-case hypotheticals at the expense of core mechanical and software integration deadlines.</li>
+              <li><strong>Working with Professional Engineers:</strong> Weekly sessions with Future Engineers mentors gave us practical troubleshooting habits—from current budgeting to mechanical strain relief and Kapton-taping SD cards.</li>
+              <li><strong>Designing for the Worst Case:</strong> Hermetic sample isolation, armored sample vaults, and fault-tolerant I²C bus recovery are essential when your lab sits 16 miles up and returns to Earth at over 120 mph.</li>
+            </ul>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-kicker">ACKNOWLEDGEMENTS</div>
+            <h3>Thank You</h3>
+            <p>
+              This project was made possible through the support, mentorship, and facilities of:
+            </p>
+            <ul class="compact-list">
+              <li><strong>Mrs. Finke</strong> (Team Lead) &amp; <strong>Oconomowoc High School</strong> (Oconomowoc, WI)</li>
+              <li><strong>NASA Flight Opportunities Program</strong> &amp; the <a href="https://www.futureengineers.org/nasatechrise" target="_blank" rel="noopener">NASA TechRise Student Challenge</a> administered by <strong>Future Engineers</strong></li>
+              <li><strong>World View Enterprises</strong> (Stratollite Flight <code>N141WV</code> / <code>World 24</code> launch &amp; recovery team)</li>
+              <li><strong>University of Wisconsin–Madison</strong> (Scanning Electron Microscopy &amp; EDS elemental microanalysis)</li>
+            </ul>
+            <div class="resource-links-row">
+              <a href="https://www.futureengineers.org/nasatechrise" target="_blank" rel="noopener" class="ext-pill">NASA TechRise Official Site ↗</a>
+              <a href="https://www.youtube.com/watch?v=9M9osLO_zgw&t=6340s" target="_blank" rel="noopener" class="ext-pill">NASA TechRise 5 Launch Broadcast ↗</a>
+              <a href="https://www.youtube.com/watch?v=DjYmvwQkJjw&t=5920s" target="_blank" rel="noopener" class="ext-pill">Full Onboard Payload Video ↗</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>TR5 // WORLD 24 — “What’s Up There?”</strong>
+        <p>Oconomowoc High School Rocketry Club · NASA TechRise Student Challenge (2025–2026)</p>
+      </div>
+      <div class="footer-meta">
+        <span>All telemetry &amp; imagery sourced directly from Flight <code>WORLD_24</code> (<code>N141WV</code>) &amp; UW–Madison SEM analysis.</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- High-Resolution Image Lightbox Modal -->
+  <div id="lightboxModal" class="lightbox-modal hidden" role="dialog" aria-modal="true" aria-label="Image Inspector">
+    <button type="button" id="lightboxClose" class="lightbox-close" aria-label="Close Image">✕</button>
+    <div class="lightbox-content">
+      <img id="lightboxImg" src="" alt="" />
+      <p id="lightboxCaption" class="lightbox-caption"></p>
+    </div>
+  </div>
+
+  <!-- Pre-compiled Lossless WORLD_24 Telemetry Dataset + Interactive Scripts -->
+  <script defer src="data/world24_data.js"></script>
+  <script defer src="js/flight-viewer.js"></script>
+  <script defer src="js/charts-and-ui.js"></script>
+</body>
+</html>

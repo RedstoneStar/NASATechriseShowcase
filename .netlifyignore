@@ -1,0 +1,5 @@
+GeneralData/
+FlightData/
+scripts/
+__pycache__/
+*.bat
