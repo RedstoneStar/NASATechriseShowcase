@@ -76,6 +76,10 @@
       </nav>
 
       <div class="header-actions">
+        <button id="openBetaModalBtn" class="beta-nav-badge" type="button" title="View Beta Status &amp; AI Disclosure">
+          <span class="beta-nav-dot"></span>
+          <span>BETA</span>
+        </button>
         <button id="globalUnitToggle" class="unit-pill" type="button" title="Toggle Imperial (ft, mph, °F) and Metric (m, m/s, °C) units">
           <span class="unit-opt active" data-u="imperial">FT · °F</span>
           <span class="unit-sep">/</span>
@@ -1018,7 +1022,7 @@
     <section id="team" class="content-section section-alt">
       <div class="container">
         <div class="section-header">
-          <span class="eyebrow">OCONOMOWOC HIGH SCHOOL ROCKETRY CLUB · WISCONSIN</span>
+          <span class="eyebrow">OCONOMOWOC HIGH SCHOOL · WISCONSIN</span>
           <h2 class="section-title">The Student Engineering Team</h2>
           <p class="section-desc">
             Built from concept to flight readiness in Oconomowoc, Wisconsin, with guidance from our teacher lead and professional NASA TechRise &amp; Future Engineers mentors.
@@ -1123,13 +1127,68 @@
     <div class="container footer-inner">
       <div>
         <strong>TR5 // WORLD 24 — “What’s Up There?”</strong>
-        <p>Oconomowoc High School Rocketry Club · NASA TechRise Student Challenge (2025–2026)</p>
+        <p>Oconomowoc High School · NASA TechRise Student Challenge (2025–2026)</p>
       </div>
       <div class="footer-meta">
-        <span>All telemetry &amp; imagery sourced directly from Flight <code>WORLD_24</code> (<code>N141WV</code>) &amp; UW–Madison SEM analysis.</span>
+        <span>All telemetry &amp; imagery sourced directly from Flight <code>WORLD_24</code> (<code>N141WV</code>) &amp; UW–Madison SEM analysis. · <button type="button" id="footerBetaBtn" class="footer-beta-link">Beta &amp; AI Notice</button></span>
       </div>
     </div>
   </footer>
+
+  <!-- First-Visit Beta & AI Disclosure Popup Modal -->
+  <div id="betaNoticeModal" class="beta-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="betaModalTitle">
+    <div class="beta-modal-card">
+      <div class="beta-modal-glow" aria-hidden="true"></div>
+      <div class="beta-modal-header">
+        <div class="beta-modal-badges">
+          <span class="badge badge-amber"><span class="beta-pulse-dot"></span> BETA VERSION</span>
+          <span class="badge badge-cyan">AI-ASSISTED WEBSITE</span>
+        </div>
+        <button type="button" id="betaModalCloseX" class="beta-modal-close" aria-label="Close Notice">✕</button>
+      </div>
+
+      <h2 id="betaModalTitle" class="beta-modal-title">Welcome to the Flight World 24 Showcase</h2>
+      <p class="beta-modal-subtitle">
+        Thank you for visiting our NASA TechRise high-altitude balloon showcase! Before exploring, please note:
+      </p>
+
+      <div class="beta-notice-points">
+        <div class="beta-point-item">
+          <div class="beta-point-icon beta-icon-amber">🚧</div>
+          <div class="beta-point-body">
+            <strong>Still in Beta — Things Will Change</strong>
+            <p>This website is currently in <strong>Beta</strong>. Features, 3D flight viewer visuals, layout sections, and written summaries are actively being updated and <strong>are definitely going to change</strong>.</p>
+          </div>
+        </div>
+
+        <div class="beta-point-item">
+          <div class="beta-point-icon beta-icon-cyan">🤖</div>
+          <div class="beta-point-body">
+            <strong>AI Was Heavily Utilized to Build This Website</strong>
+            <p>Artificial Intelligence (AI) was heavily utilized in the process of designing, coding, and building this website, including the interactive 3D flight viewer, telemetry charts, and page layout.</p>
+          </div>
+        </div>
+
+        <div class="beta-point-item">
+          <div class="beta-point-icon beta-icon-emerald">🛰️</div>
+          <div class="beta-point-body">
+            <strong>100% Real Flight Data &amp; Project Hardware</strong>
+            <p>While AI helped build the website, all flight telemetry (<code>WORLD_24</code>), onboard camera video, hardware photos, and UW–Madison electron microscopy results come directly from our real experiment.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="beta-modal-footer">
+        <label class="beta-dont-show">
+          <input type="checkbox" id="betaRememberCheck" checked />
+          <span>Remember for next time (you can re-open this anytime via the <strong>BETA</strong> button at the top)</span>
+        </label>
+        <button type="button" id="betaModalAcceptBtn" class="btn btn-primary beta-accept-btn">
+          I Understand · Enter Website →
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- High-Resolution Image Lightbox Modal -->
   <div id="lightboxModal" class="lightbox-modal hidden" role="dialog" aria-modal="true" aria-label="Image Inspector">

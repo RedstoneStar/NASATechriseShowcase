@@ -10,6 +10,8 @@ An interactive, high-fidelity **3D stratospheric flight reconstruction and scien
 
 🌐 **Live Showcase Website:** [**https://redstonestar.github.io/NASATechriseShowcase/**](https://redstonestar.github.io/NASATechriseShowcase/)
 
+> **⚠️ Beta & AI Disclosure:** This showcase website is currently in **Beta** and will continue to change as we refine our post-flight analysis. Artificial Intelligence (AI) was heavily utilized in designing, coding, and building this website, while all flight telemetry (`WORLD_24`), onboard video, hardware imagery, and UW–Madison SEM/EDS microscopy data come directly from our physical experiment.
+
 ---
 
 ## 📖 Table of Contents
@@ -177,4 +179,4 @@ The site is hosted automatically on **GitHub Pages**:
 - **NASA Flight Opportunities Program** & **Future Engineers** for sponsoring the TechRise Student Challenge and providing payload integration.
 - **World View Enterprises** for balloon launch operations from Page, AZ on tail number `N141WV`.
 - **University of Wisconsin–Madison Materials Science Center** for Scanning Electron Microscopy (SEM) and Energy Dispersive X-ray Spectroscopy (EDS) instrumentation access.
-- **Oconomowoc High School Rocketry Club** student engineering team and faculty advisors.
+- **Oconomowoc High School** student engineering team and faculty advisor.

@@ -116,6 +116,53 @@
       if (e.target === modal) closeLightbox();
     });
 
+    // First-Visit Beta & AI Disclosure Popup Modal
+    const betaModal = document.getElementById('betaNoticeModal');
+    const betaAcceptBtn = document.getElementById('betaModalAcceptBtn');
+    const betaCloseX = document.getElementById('betaModalCloseX');
+    const betaOpenNavBtn = document.getElementById('openBetaModalBtn');
+    const betaOpenFooterBtn = document.getElementById('footerBetaBtn');
+    const betaRememberCheck = document.getElementById('betaRememberCheck');
+    const BETA_STORAGE_KEY = 'world24_beta_notice_v1';
+
+    function openBetaModal() {
+      if (!betaModal) return;
+      betaModal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeBetaModal() {
+      if (!betaModal || betaModal.classList.contains('hidden')) return;
+      betaModal.classList.add('hidden');
+      document.body.style.overflow = '';
+      try {
+        if (betaRememberCheck && !betaRememberCheck.checked) {
+          localStorage.removeItem(BETA_STORAGE_KEY);
+        } else {
+          localStorage.setItem(BETA_STORAGE_KEY, 'dismissed');
+        }
+      } catch (_e) {
+        // Ignore storage errors in private/restricted browsing
+      }
+    }
+
+    betaAcceptBtn?.addEventListener('click', closeBetaModal);
+    betaCloseX?.addEventListener('click', closeBetaModal);
+    betaOpenNavBtn?.addEventListener('click', openBetaModal);
+    betaOpenFooterBtn?.addEventListener('click', openBetaModal);
+    betaModal?.addEventListener('click', (e) => {
+      if (e.target === betaModal) closeBetaModal();
+    });
+
+    try {
+      const seenBeta = localStorage.getItem(BETA_STORAGE_KEY);
+      if (seenBeta !== 'dismissed') {
+        openBetaModal();
+      }
+    } catch (_e) {
+      openBetaModal();
+    }
+
     // Global Keyboard Shortcuts (Escape, Space for 3D replay, F for Fullscreen)
     document.addEventListener('keydown', (e) => {
       const tag = (e.target && e.target.tagName) || '';
@@ -123,6 +170,7 @@
 
       if (e.key === 'Escape') {
         closeLightbox();
+        closeBetaModal();
         document.getElementById('layerDropdown')?.classList.remove('open');
         const shell = document.getElementById('viewerShell');
         if (shell?.classList.contains('theater-fullscreen')) {
